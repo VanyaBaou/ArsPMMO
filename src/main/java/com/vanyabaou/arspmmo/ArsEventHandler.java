@@ -31,9 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = ArsPMMO.MOD_ID)
-public class EventHandler {
-
-    public static final Logger LOGGER = LogManager.getLogger();
+public class ArsEventHandler {
 
     @SubscribeEvent
     public static void onSpellCast(SpellCastEvent event){
