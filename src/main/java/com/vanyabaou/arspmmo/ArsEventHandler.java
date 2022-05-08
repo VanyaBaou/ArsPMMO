@@ -37,6 +37,8 @@ public class ArsEventHandler {
     public static void onSpellCast(SpellCastEvent event){
         if (event.getEntityLiving().world.isRemote)
             return;
+        if (!(event.getEntityLiving() instanceof PlayerEntity))
+            return;
         LivingEntity entity = event.getEntityLiving();
         UUID uuid = entity.getUniqueID();
         ServerPlayerEntity player = XP.getPlayerByUUID(uuid);
