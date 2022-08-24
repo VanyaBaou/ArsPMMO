@@ -25,13 +25,12 @@ import java.util.Map;
 public class PMMOEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void handleAttack(LivingAttackEvent event)
-    {
+    public static void handleAttack(LivingAttackEvent event) {
         LivingEntity target = event.getEntityLiving();
         Entity source = event.getSource().getTrueSource();
         if (target != null && source instanceof ServerPlayerEntity) {
             ServerPlayerEntity player = (ServerPlayerEntity) source;
-            if(XP.isPlayerSurvival(player)) {
+            if (XP.isPlayerSurvival(player)) {
                 ItemStack mainItemStack = player.getHeldItemMainhand();
                 ResourceLocation mainResLoc = player.getHeldItemMainhand().getItem().getRegistryName();
                 ResourceLocation offResLoc = player.getHeldItemOffhand().getItem().getRegistryName();

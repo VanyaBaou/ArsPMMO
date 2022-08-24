@@ -8,6 +8,7 @@ import com.hollingsworth.arsnouveau.common.items.SpellArrow;
 import com.hollingsworth.arsnouveau.common.items.SpellBow;
 import com.hollingsworth.arsnouveau.common.spell.augment.AugmentSensitive;
 import com.hollingsworth.arsnouveau.common.spell.method.MethodTouch;
+import com.hollingsworth.arsnouveau.setup.ItemsRegistry;
 import harmonised.pmmo.config.JType;
 import harmonised.pmmo.skills.Skill;
 import harmonised.pmmo.util.XP;
@@ -23,8 +24,6 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +34,8 @@ public class ArsEventHandler {
 
     @SubscribeEvent
     public static void onSpellCast(SpellCastEvent event){
+        if (event.getEntityLiving() == null)
+            return;
         if (event.getEntityLiving().world.isRemote)
             return;
         if (!(event.getEntityLiving() instanceof PlayerEntity))
@@ -42,6 +43,8 @@ public class ArsEventHandler {
         LivingEntity entity = event.getEntityLiving();
         UUID uuid = entity.getUniqueID();
         ServerPlayerEntity player = XP.getPlayerByUUID(uuid);
+        if (player == null)
+            return;
         if (player.isCreative())
             return;
         Spell spell = event.spell;
@@ -73,8 +76,7 @@ public class ArsEventHandler {
     }
 
     @SubscribeEvent
-    public static void calcMaxMana(MaxManaCalcEvent event)
-    {
+    public static void calcMaxMana(MaxManaCalcEvent event) {
         if (event.getEntityLiving().world.isRemote)
             return;
         LivingEntity entity = event.getEntityLiving();
@@ -135,14 +137,35 @@ public class ArsEventHandler {
 
         for (AbstractSpellPart spellPart : spellParts) {
 //            LOGGER.info("RecipePart: " + spellPart.getItemID());
-            if (checkEffect) {
-                if (spellPart instanceof AbstractEffect) {
+            if (checkEffect)
+                if (spellPart instanceof AbstractEffect)
                     hasEffect = true;
-                }
-            }
             if (XP.isPlayerSurvival(player) && harmonised.pmmo.config.Config.forgeConfig.useReqEnabled.get()) {
                 String glyphName = spellPart.getLocaleName();
                 String glyphRegistryName = "ars_nouveau:" + spellPart.getItemID();
+                boolean canCastTier = true;
+                System.out.println(glyphName + " : " + spellPart.getTier().ordinal());
+                switch (spellPart.getTier().ordinal()) {
+                    case 0:
+                        if (!XP.checkReq(player, ItemsRegistry.noviceSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                            canCastTier = false;
+                        break;
+                    case 1:
+                        if (!XP.checkReq(player, ItemsRegistry.apprenticeSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                            canCastTier = false;
+                        break;
+                    case 2:
+                        if (!XP.checkReq(player, ItemsRegistry.archmageSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                            canCastTier = false;
+                        break;
+                    default:
+                        canCastTier = false;
+                }
+                if (!canCastTier) {
+                    spellData.put("canCast", false);
+                    spellData.put("glyph", spellPart);
+                    return spellData;
+                }
                 //LOGGER.info("Checking requirements for " + glyphName + " (" + glyphRegistryName + ")");
                 if (!XP.checkReq(player, glyphRegistryName, JType.REQ_USE)) {
                     //LOGGER.info(player.getDisplayName().getString() + " - Requirements not met for: " + glyphName + " (" + glyphRegistryName + ")");
@@ -151,11 +174,9 @@ public class ArsEventHandler {
                     return spellData;
                 }
             }
-            if (checkMana) {
+            if (checkMana)
                 manaCost += spellPart.getManaCost();
-            }
         }
-
         spellData.put("canCast", true);
         spellData.put("hasEffect", hasEffect);
         spellData.put("manaCost", manaCost);
