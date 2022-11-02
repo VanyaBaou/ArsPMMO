@@ -144,7 +144,7 @@ public class ArsEventHandler {
                 String glyphName = spellPart.getLocaleName();
                 String glyphRegistryName = "ars_nouveau:" + spellPart.getItemID();
                 boolean canCastTier = true;
-                System.out.println(glyphName + " : " + spellPart.getTier().ordinal());
+//                System.out.println(glyphName + " : " + spellPart.getTier().ordinal());
                 switch (spellPart.getTier().ordinal()) {
                     case 0:
                         if (!XP.checkReq(player, ItemsRegistry.noviceSpellBook.getRegistryName().toString(), JType.REQ_USE))
