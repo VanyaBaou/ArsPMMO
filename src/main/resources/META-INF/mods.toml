@@ -39,3 +39,9 @@ PMMO Integration for Ars Nouveau
    versionRange="[1.16.5,1.17)"
    ordering="NONE"
    side="BOTH"
+[[dependencies.ars_nouveau]]
+    modId="patchouli"
+    mandatory=true
+    versionRange="[1.16-42,)"
+    ordering="AFTER"
+    side="BOTH"

@@ -60,7 +60,7 @@ public class ArsEventHandler {
             }
         }
 
-        Map<String,Object> spellData = checkRecipe(player, true, true, spell.recipe.toArray(new AbstractSpellPart[]{}));
+        Map<String,Object> spellData = checkRecipe(player, spell.recipe.toArray(new AbstractSpellPart[]{}));
 
         if (!(boolean)spellData.get("canCast")) {
             player.sendStatusMessage((new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpell", new TranslationTextComponent(((AbstractSpellPart)spellData.get("glyph")).getLocalizationKey()))).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
@@ -69,7 +69,7 @@ public class ArsEventHandler {
         }
 
         if ((boolean)spellData.get("hasEffect") && !touchAir) {
-            double xpAward = Config.XP_BONUS.get() * (double)spellData.get("manaCost");
+            double xpAward = Config.XP_BONUS.get() * spell.getCastingCost();
             XP.awardXp(player, "magic", null, xpAward, false, false, false);
         }
 
@@ -113,7 +113,7 @@ public class ArsEventHandler {
 
             if (!arrowStack.isEmpty() && arrowStack.getItem() instanceof SpellArrow) {
                 SpellArrow spellArrow = (SpellArrow) arrowStack.getItem();
-                Map<String,Object> arrowSpellData = checkRecipe(player, false, false, spellArrow.part);
+                Map<String,Object> arrowSpellData = checkRecipe(player, spellArrow.part);
                 if (!(boolean)arrowSpellData.get("canCast")) {
                     player.sendStatusMessage((new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpell", new TranslationTextComponent(spellArrow.part.getLocalizationKey()))).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
                     event.setCanceled(true);
@@ -122,7 +122,7 @@ public class ArsEventHandler {
 
             SpellResolver spellResolver = new SpellResolver((new SpellContext(caster.getSpell(), player)));
 
-            Map<String,Object> spellData = checkRecipe(player, false, false, spellResolver.spell.recipe.toArray(new AbstractSpellPart[]{}));
+            Map<String,Object> spellData = checkRecipe(player, spellResolver.spell.recipe.toArray(new AbstractSpellPart[]{}));
             if (!(boolean)spellData.get("canCast")) {
                 player.sendStatusMessage((new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpell", new TranslationTextComponent(((AbstractSpellPart)spellData.get("glyph")).getLocalizationKey()))).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
                 event.setCanceled(true);
@@ -130,20 +130,20 @@ public class ArsEventHandler {
         }
     }
 
-    private static Map<String,Object> checkRecipe(PlayerEntity player, boolean checkEffect, boolean checkMana, AbstractSpellPart... spellParts) {
+    private static Map<String,Object> checkRecipe(PlayerEntity player, AbstractSpellPart... spellParts) {
         boolean hasEffect = false;
-        double manaCost = 0;
+//        String glyphName;
+        String glyphRegistryName;
+        boolean canCastTier;
         Map<String,Object> spellData = new HashMap<>();
-
         for (AbstractSpellPart spellPart : spellParts) {
 //            LOGGER.info("RecipePart: " + spellPart.getItemID());
-            if (checkEffect)
-                if (spellPart instanceof AbstractEffect)
-                    hasEffect = true;
+            if (spellPart instanceof AbstractEffect)
+                hasEffect = true;
             if (XP.isPlayerSurvival(player) && harmonised.pmmo.config.Config.forgeConfig.useReqEnabled.get()) {
-                String glyphName = spellPart.getLocaleName();
-                String glyphRegistryName = "ars_nouveau:" + spellPart.getItemID();
-                boolean canCastTier = true;
+//                glyphName = spellPart.getLocaleName();
+                glyphRegistryName = "ars_nouveau:" + spellPart.getItemID();
+                canCastTier = true;
 //                System.out.println(glyphName + " : " + spellPart.getTier().ordinal());
                 switch (spellPart.getTier().ordinal()) {
                     case 0:
@@ -174,12 +174,9 @@ public class ArsEventHandler {
                     return spellData;
                 }
             }
-            if (checkMana)
-                manaCost += spellPart.getManaCost();
         }
         spellData.put("canCast", true);
         spellData.put("hasEffect", hasEffect);
-        spellData.put("manaCost", manaCost);
         return spellData;
     }
 

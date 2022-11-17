@@ -31,9 +31,10 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
 
-    implementation fg.deobf("curse.maven:ars-nouveau-401955:3629422")
-    implementation fg.deobf("curse.maven:project-mmo-353935:3583270")
-    implementation fg.deobf("curse.maven:geckolib-388172:3627499")
+    implementation fg.deobf("curse.maven:ars-nouveau-401955:4087794")
+    implementation fg.deobf("curse.maven:project-mmo-353935:3735196")
+    implementation fg.deobf("curse.maven:geckolib-388172:4061692")
+    implementation fg.deobf("curse.maven:patchouli-306770:3204037")
 }
 
 jar {
