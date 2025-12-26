@@ -18,6 +18,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -33,7 +34,7 @@ import java.util.UUID;
 public class ArsEventHandler {
 
     @SubscribeEvent
-    public static void onSpellCast(SpellCastEvent event){
+    public static void onSpellCast(SpellCastEvent event) {
         if (event.getEntityLiving() == null)
             return;
         if (event.getEntityLiving().world.isRemote)
@@ -55,20 +56,31 @@ public class ArsEventHandler {
             boolean isSensitive = spell.getBuffsAtIndex(0, player, AugmentSensitive.INSTANCE) > 0;
             RayTraceResult result = player.pick(5.0D, 0.0F, isSensitive);
             if (result.getType() != RayTraceResult.Type.BLOCK && (!isSensitive || !(result instanceof BlockRayTraceResult))) {
-                //LOGGER.info("Cancelling Touch on Air");
                 touchAir = true;
             }
         }
 
-        Map<String,Object> spellData = checkRecipe(player, spell.recipe.toArray(new AbstractSpellPart[]{}));
+        Map<String, Object> spellData = checkRecipe(player, spell.recipe.toArray(new AbstractSpellPart[]{}));
 
-        if (!(boolean)spellData.get("canCast")) {
-            player.sendStatusMessage((new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpell", new TranslationTextComponent(((AbstractSpellPart)spellData.get("glyph")).getLocalizationKey()))).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
+        if (!(boolean) spellData.get("canCast")) {
+            if (Config.TIER_CHECKING.get()) {
+                player.sendStatusMessage(
+                        (new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpell",
+                                new TranslationTextComponent(((AbstractSpellPart) spellData.get("glyph")).getLocalizationKey()),
+                                new StringTextComponent(String.valueOf(((AbstractSpellPart) spellData.get("glyph")).getTier().ordinal()))
+                        )).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
+            } else {
+                player.sendStatusMessage(
+                        (new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpellTier",
+                                new TranslationTextComponent(((AbstractSpellPart) spellData.get("glyph")).getLocalizationKey())
+                        )).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
+            }
             event.setCanceled(true);
             return;
         }
 
-        if ((boolean)spellData.get("hasEffect") && !touchAir) {
+
+        if ((boolean) spellData.get("hasEffect") && !touchAir) {
             double xpAward = Config.XP_BONUS.get() * spell.getCastingCost();
             XP.awardXp(player, "magic", null, xpAward, false, false, false);
         }
@@ -124,7 +136,11 @@ public class ArsEventHandler {
 
             Map<String,Object> spellData = checkRecipe(player, spellResolver.spell.recipe.toArray(new AbstractSpellPart[]{}));
             if (!(boolean)spellData.get("canCast")) {
-                player.sendStatusMessage((new TranslationTextComponent("arspmmo.notSkilledEnoughToCastSpell", new TranslationTextComponent(((AbstractSpellPart)spellData.get("glyph")).getLocalizationKey()))).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
+                player.sendStatusMessage(
+                        (new TranslationTextComponent(
+                                "arspmmo.notSkilledEnoughToCastSpell",
+                                new TranslationTextComponent(((AbstractSpellPart)spellData.get("glyph")).getLocalizationKey())
+                        )).setStyle(Style.EMPTY.applyFormatting(TextFormatting.RED)), true);
                 event.setCanceled(true);
             }
         }
@@ -137,38 +153,35 @@ public class ArsEventHandler {
         boolean canCastTier;
         Map<String,Object> spellData = new HashMap<>();
         for (AbstractSpellPart spellPart : spellParts) {
-//            LOGGER.info("RecipePart: " + spellPart.getItemID());
             if (spellPart instanceof AbstractEffect)
                 hasEffect = true;
             if (XP.isPlayerSurvival(player) && harmonised.pmmo.config.Config.forgeConfig.useReqEnabled.get()) {
-//                glyphName = spellPart.getLocaleName();
                 glyphRegistryName = "ars_nouveau:" + spellPart.getItemID();
-                canCastTier = true;
-//                System.out.println(glyphName + " : " + spellPart.getTier().ordinal());
-                switch (spellPart.getTier().ordinal()) {
-                    case 0:
-                        if (!XP.checkReq(player, ItemsRegistry.noviceSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                if (Config.TIER_CHECKING.get()) {
+                    canCastTier = true;
+                    switch (spellPart.getTier().ordinal()) {
+                        case 0:
+                            if (!XP.checkReq(player, ItemsRegistry.noviceSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                                canCastTier = false;
+                            break;
+                        case 1:
+                            if (!XP.checkReq(player, ItemsRegistry.apprenticeSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                                canCastTier = false;
+                            break;
+                        case 2:
+                            if (!XP.checkReq(player, ItemsRegistry.archmageSpellBook.getRegistryName().toString(), JType.REQ_USE))
+                                canCastTier = false;
+                            break;
+                        default:
                             canCastTier = false;
-                        break;
-                    case 1:
-                        if (!XP.checkReq(player, ItemsRegistry.apprenticeSpellBook.getRegistryName().toString(), JType.REQ_USE))
-                            canCastTier = false;
-                        break;
-                    case 2:
-                        if (!XP.checkReq(player, ItemsRegistry.archmageSpellBook.getRegistryName().toString(), JType.REQ_USE))
-                            canCastTier = false;
-                        break;
-                    default:
-                        canCastTier = false;
+                    }
+                    if (!canCastTier) {
+                        spellData.put("canCast", false);
+                        spellData.put("glyph", spellPart);
+                        return spellData;
+                    }
                 }
-                if (!canCastTier) {
-                    spellData.put("canCast", false);
-                    spellData.put("glyph", spellPart);
-                    return spellData;
-                }
-                //LOGGER.info("Checking requirements for " + glyphName + " (" + glyphRegistryName + ")");
                 if (!XP.checkReq(player, glyphRegistryName, JType.REQ_USE)) {
-                    //LOGGER.info(player.getDisplayName().getString() + " - Requirements not met for: " + glyphName + " (" + glyphRegistryName + ")");
                     spellData.put("canCast", false);
                     spellData.put("glyph", spellPart);
                     return spellData;

@@ -26,6 +26,8 @@ public class PMMOEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void handleAttack(LivingAttackEvent event) {
+        if (!Config.PMMO_ATTACK_HANDLER.get())
+            return;
         LivingEntity target = event.getEntityLiving();
         Entity source = event.getSource().getTrueSource();
         if (target != null && source instanceof ServerPlayerEntity) {

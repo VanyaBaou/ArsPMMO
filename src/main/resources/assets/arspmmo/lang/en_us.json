@@ -1,3 +1,4 @@
 {
-  "arspmmo.notSkilledEnoughToCastSpell": "You are not skilled enough to cast %1$s!"
+  "arspmmo.notSkilledEnoughToCastSpell": "You are not skilled enough to cast %1$s!",
+  "arspmmo.notSkilledEnoughToCastSpellTier": "You are not skilled enough to cast %1$s! (Tier %s)"
 }
